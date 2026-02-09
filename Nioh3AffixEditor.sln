@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nioh3AffixEditor", "Nioh3AffixEditor.csproj", "{43192F08-3760-9F65-75D7-8C0EAA29416B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43192F08-3760-9F65-75D7-8C0EAA29416B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43192F08-3760-9F65-75D7-8C0EAA29416B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43192F08-3760-9F65-75D7-8C0EAA29416B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43192F08-3760-9F65-75D7-8C0EAA29416B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8F86C4B7-CB62-45D7-9AD8-F8BA6B282A4D}
+	EndGlobalSection
+EndGlobal

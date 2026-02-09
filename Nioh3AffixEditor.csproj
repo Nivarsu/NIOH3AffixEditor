@@ -1,0 +1,82 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- App versioning (shown in UI + used for update checks). -->
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+
+    <!-- Application icon -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
+
+    <!-- Single file publish settings -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <!-- Internal test build: enables TEST_BUILD-only UI and logs. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Test'">
+    <DefineConstants>$(DefineConstants);TEST_BUILD</DefineConstants>
+    <Optimize>false</Optimize>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- Exclude collector subproject sources from main editor build -->
+  <ItemGroup>
+    <Compile Remove="Nioh3AffixCollector\**\*.cs" />
+    <Page Remove="Nioh3AffixCollector\**\*.xaml" />
+    <ApplicationDefinition Remove="Nioh3AffixCollector\**\*.xaml" />
+    <EmbeddedResource Remove="Nioh3AffixCollector\**\*" />
+    <None Remove="Nioh3AffixCollector\**\*" />
+  </ItemGroup>
+
+  <!-- Embed native DLL as resource -->
+  <ItemGroup>
+    <EmbeddedResource Include="bin\Release\Nioh3AffixCore.dll"
+                      LogicalName="Nioh3AffixEditor.Nioh3AffixCore.dll"
+                      Condition="Exists('bin\Release\Nioh3AffixCore.dll')" />
+  </ItemGroup>
+
+  <!-- Built-in affix ID -> name table (generated from 参考代码\仁王3词条ID.xlsx) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\affix_id_table.csv"
+                      LogicalName="Nioh3AffixEditor.Resources.affix_id_table.csv"
+                      Condition="Exists('Resources\affix_id_table.csv')" />
+  </ItemGroup>
+
+  <!-- Built-in underworld skill ID -> name table (generated from 参考代码\仁王3词条ID.xlsx) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\underworld_skill_table.csv"
+                      LogicalName="Nioh3AffixEditor.Resources.underworld_skill_table.csv"
+                      Condition="Exists('Resources\\underworld_skill_table.csv')" />
+  </ItemGroup>
+
+  <!-- Copy native DLL to output directory for development (not for publish) -->
+  <ItemGroup>
+    <None Include="Nioh3AffixCore\bin\Release\Nioh3AffixCore.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="Never"
+          Condition="Exists('Nioh3AffixCore\bin\Release\Nioh3AffixCore.dll')" />
+    <None Include="Nioh3AffixCore\bin\Debug\Nioh3AffixCore.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="Never"
+          Condition="Exists('Nioh3AffixCore\bin\Debug\Nioh3AffixCore.dll') And !Exists('Nioh3AffixCore\bin\Release\Nioh3AffixCore.dll')" />
+  </ItemGroup>
+
+</Project>
+
+

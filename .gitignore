@@ -1,0 +1,29 @@
+# IDE / local settings
+.vs/
+.vscode/
+.claude/
+Nioh3AffixCollector/
+
+# Build outputs
+bin/
+obj/
+publish/
+publish-test/
+publish-test-*/
+Nioh3AffixCore/build/
+Nioh3AffixCore/bin/
+Nioh3AffixCollector/**/bin/
+Nioh3AffixCollector/**/obj/
+
+# Temp / logs / cache
+*.log
+*.tmp
+*.cache
+nul
+
+# Local/reference materials not needed in source repo
+参考代码/
+
+# Personal CSV data should not be tracked
+Resources/*.csv
+tools/*.csv
