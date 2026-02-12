@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # 需要 Windows 以支持 MSVC 和 WPF
+    runs-on: windows-latest  # Windows 2025 镜像已预装 VS 2022 和 CMake
 
     steps:
       - name: Checkout repository
@@ -20,6 +20,7 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Build Native C++ DLL (Nioh3AffixCore)
+        shell: cmd
         run: |
           cd Nioh3AffixCore
           if not exist build mkdir build
@@ -31,13 +32,31 @@ jobs:
         run: |
           dotnet publish Nioh3AffixEditor.csproj -c Test -o publish-test
 
-      - name: Copy Native DLL to Publish Directory
+      - name: Copy Native DLL to Test Publish Directory
+        shell: cmd
         run: |
-          copy Nioh3AffixCore\bin\Release\Nioh3AffixCore.dll publish-test\
+          copy Nioh3AffixCore\build\Release\Nioh3AffixCore.dll publish-test\
 
-      - name: Upload Build Artifact
+      - name: Upload Test Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: NIOH3AffixEditor-Test-Build
           path: publish-test/
+          if-no-files-found: error
+
+      # 可选：同时构建 Release 配置（framework-dependent，win-x64）
+      - name: Publish Release Configuration
+        run: |
+          dotnet publish Nioh3AffixEditor.csproj -c Release -o publish-release -r win-x64 --self-contained false
+
+      - name: Copy Native DLL to Release Publish Directory
+        shell: cmd
+        run: |
+          copy Nioh3AffixCore\build\Release\Nioh3AffixCore.dll publish-release\
+
+      - name: Upload Release Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NIOH3AffixEditor-Release-Build
+          path: publish-release/
           if-no-files-found: error
