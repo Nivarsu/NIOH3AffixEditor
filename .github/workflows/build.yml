@@ -1,60 +1,43 @@
-name: Ultimate Auto-Fix Build
+name: Build NIOH3AffixEditor
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+    runs-on: windows-latest  # 需要 Windows 以支持 MSVC 和 WPF
 
-      - name: Setup .NET
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 9.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # 强化版补丁：使用正则匹配，不匹配行首，确保能抓到函数声明
-      - name: Patch Native Source Code (Stronger)
-        run: |
-          $file = "Nioh3AffixCore/exports.cpp"
-          if (Test-Path $file) {
-            $rawContent = Get-Content $file -Raw -Encoding utf8
-            # 逻辑：在 EnableSkillBypass 函数定义之前强行插入一个闭合括号 }
-            # 正则解释：匹配前面可能有 extern "C" 等修饰符的 void EnableSkillBypass
-            $newContent = $rawContent -replace '(?m)^\s*(.*)void\s+EnableSkillBypass', "`n}`nvoid EnableSkillBypass"
-            
-            # 写入文件，强制使用 UTF8 编码
-            [System.IO.File]::WriteAllText($(Get-Item $file).FullName, $newContent, [System.Text.Encoding]::UTF8)
-            Write-Host "Patch applied to $file"
-          } else {
-            Write-Error "File $file not found!"
-          }
-
-      - name: Build Native Core
+      - name: Build Native C++ DLL (Nioh3AffixCore)
         run: |
           cd Nioh3AffixCore
-          cmake -B build -G "Visual Studio 17 2022" -A x64
+          if not exist build mkdir build
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
           cmake --build build --config Release
+          cd ..
 
-      - name: Build UI (C#)
+      - name: Publish Test Configuration
         run: |
-          dotnet publish Nioh3AffixEditor.csproj -c Release -r win-x64 --self-contained true -o ./final_build
+          dotnet publish Nioh3AffixEditor.csproj -c Test -o publish-test
 
-      - name: Prepare Package
+      - name: Copy Native DLL to Publish Directory
         run: |
-          # 寻找生成的 DLL 并拷贝到发布目录
-          $dll = Get-ChildItem -Recurse -Filter "Nioh3AffixCore.dll" | Where-Object { $_.FullName -like "*Release*" } | Select-Object -First 1
-          if ($dll) {
-            Copy-Item $dll.FullName -Destination ./final_build/
-            Write-Host "Found and copied DLL: $($dll.FullName)"
-          } else {
-            Write-Error "Native DLL not found! Build might have failed."
-          }
+          copy Nioh3AffixCore\bin\Release\Nioh3AffixCore.dll publish-test\
 
-      - name: Upload
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NIOH3Editor-Fixed-V2
-          path: ./final_build
+          name: NIOH3AffixEditor-Test-Build
+          path: publish-test/
+          if-no-files-found: error
