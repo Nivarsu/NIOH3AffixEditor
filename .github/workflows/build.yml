@@ -1,0 +1,26 @@
+name: Build EXE
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x' # 根据项目需求，通常6.0或8.0即可
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NIOH3Editor-Binary
+          path: "**/bin/Release/**"
