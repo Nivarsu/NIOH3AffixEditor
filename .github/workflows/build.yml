@@ -1,4 +1,4 @@
-name: Full Build (Core + UI)
+name: Full Build (Fix Path)
 
 on: [push, workflow_dispatch]
 
@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive # 确保拉取所有子模块
+          submodules: recursive
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -18,25 +18,29 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 1. 编译 C++ 核心库
+      # 1. 自动寻找并编译 C++ 核心库
       - name: Build Native Core (C++)
         run: |
-          msbuild Nioh3AffixCore/Nioh3AffixCore.vcxproj /p:Configuration=Release /p:Platform=x64
+          $vpc = Get-ChildItem -Recurper -Filter "Nioh3AffixCore.vcxproj" | Select-Object -First 1
+          msbuild $($vpc.FullName) /p:Configuration=Release /p:Platform=x64
 
-      # 2. 编译 C# UI 界面
+      # 2. 自动寻找并编译 C# UI
       - name: Build UI (C#)
         run: |
-          dotnet publish NIOH3AffixEditor/Nioh3AffixEditor.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=false
+          $csproj = Get-ChildItem -Recurse -Filter "Nioh3AffixEditor.csproj" | Select-Object -First 1
+          dotnet publish $($csproj.FullName) -c Release -r win-x64 --self-contained true /p:PublishSingleFile=false
 
-      # 3. 整理文件：把 DLL 复制到 EXE 旁边
+      # 3. 智能收集文件
       - name: Prepare Package
         run: |
           mkdir out
-          copy NIOH3AffixEditor\bin\Release\net9.0-windows\win-x64\publish\* out\
-          copy x64\Release\Nioh3AffixCore.dll out\
+          # 复制 C# 编译结果 (根据 crash.log 中的路径结构)
+          Get-ChildItem -Recurse -Path "**/bin/Release/net9.0-windows/win-x64/publish/*" | Copy-Item -Destination out/ -ErrorAction SilentlyContinue
+          # 复制 C++ 编译出的 DLL
+          Get-ChildItem -Recurse -Path "**/x64/Release/Nioh3AffixCore.dll" | Copy-Item -Destination out/ -ErrorAction SilentlyContinue
 
       - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: NIOH3Editor-Ready-To-Run
+          name: NIOH3Editor-Final-Package
           path: out/
