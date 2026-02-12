@@ -8,19 +8,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '6.0.x' # 根据项目需求，通常6.0或8.0即可
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1
 
-      - name: Build
-        run: dotnet build --configuration Release --no-restore
+      - name: Restore NuGet Packages
+        run: nuget restore NIOH3AffixEditor.sln
+
+      - name: Build Solution
+        run: msbuild NIOH3AffixEditor.sln /p:Configuration=Release /p:Platform="Any CPU"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: NIOH3Editor-Binary
-          path: "**/bin/Release/**"
+          name: NIOH3Editor-Full-Package
+          # 关键：打包整个 Release 目录，确保包含所有必要的 DLL
+          path: "**/bin/Release/"
