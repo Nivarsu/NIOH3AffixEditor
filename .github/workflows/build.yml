@@ -1,4 +1,4 @@
-name: Final Auto-Fix Build
+name: Ultimate Auto-Fix Build
 
 on: [push, workflow_dispatch]
 
@@ -15,44 +15,46 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # 关键步骤：自动修复源码中的括号缺失错误
-      - name: Patch Native Source Code
+      # 强化版补丁：使用正则匹配，不匹配行首，确保能抓到函数声明
+      - name: Patch Native Source Code (Stronger)
         run: |
           $file = "Nioh3AffixCore/exports.cpp"
-          $content = Get-Content $file
-          # 在第 948 行左右（EnableSkillBypass 之前）插入一个闭合括号，修复作者的笔误
-          # 我们通过搜索函数名来精确定位插入点
-          $targetLine = Select-String -Path $file -Pattern "void EnableSkillBypass" | Select-Object -ExpandProperty LineNumber
-          if ($targetLine) {
-            $insertPos = $targetLine - 1
-            $newContent = $content[0..($insertPos-1)] + "}" + $content[$insertPos..($content.Length-1)]
-            Set-Content $file $newContent
-            Write-Host "Successfully patched $file at line $insertPos"
+          if (Test-Path $file) {
+            $rawContent = Get-Content $file -Raw -Encoding utf8
+            # 逻辑：在 EnableSkillBypass 函数定义之前强行插入一个闭合括号 }
+            # 正则解释：匹配前面可能有 extern "C" 等修饰符的 void EnableSkillBypass
+            $newContent = $rawContent -replace '(?m)^\s*(.*)void\s+EnableSkillBypass', "`n}`nvoid EnableSkillBypass"
+            
+            # 写入文件，强制使用 UTF8 编码
+            [System.IO.File]::WriteAllText($(Get-Item $file).FullName, $newContent, [System.Text.Encoding]::UTF8)
+            Write-Host "Patch applied to $file"
+          } else {
+            Write-Error "File $file not found!"
           }
 
-      # 1. 编译 C++ 核心库 (现在源码应该正常了)
       - name: Build Native Core
         run: |
           cd Nioh3AffixCore
           cmake -B build -G "Visual Studio 17 2022" -A x64
           cmake --build build --config Release
 
-      # 2. 编译 C# UI
       - name: Build UI (C#)
         run: |
           dotnet publish Nioh3AffixEditor.csproj -c Release -r win-x64 --self-contained true -o ./final_build
 
-      # 3. 收集文件
       - name: Prepare Package
         run: |
-          $dll = Get-ChildItem -Recurse -Filter "Nioh3AffixCore.dll" | Select-Object -First 1
+          # 寻找生成的 DLL 并拷贝到发布目录
+          $dll = Get-ChildItem -Recurse -Filter "Nioh3AffixCore.dll" | Where-Object { $_.FullName -like "*Release*" } | Select-Object -First 1
           if ($dll) {
             Copy-Item $dll.FullName -Destination ./final_build/
+            Write-Host "Found and copied DLL: $($dll.FullName)"
+          } else {
+            Write-Error "Native DLL not found! Build might have failed."
           }
-          # 顺便把那个 crash.log 里提到的可能需要的依赖也带上（如果有的话）
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: NIOH3Editor-Fixed-Ready
+          name: NIOH3Editor-Fixed-V2
           path: ./final_build
