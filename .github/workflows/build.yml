@@ -1,4 +1,4 @@
-name: Build EXE
+name: Full Build (Core + UI)
 
 on: [push, workflow_dispatch]
 
@@ -7,22 +7,36 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          submodules: recursive # 确保拉取所有子模块
+
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-      - name: Restore NuGet Packages
-        run: nuget restore NIOH3AffixEditor.sln
+      # 1. 编译 C++ 核心库
+      - name: Build Native Core (C++)
+        run: |
+          msbuild Nioh3AffixCore/Nioh3AffixCore.vcxproj /p:Configuration=Release /p:Platform=x64
 
-      - name: Build Solution
-        run: msbuild NIOH3AffixEditor.sln /p:Configuration=Release /p:Platform="Any CPU"
+      # 2. 编译 C# UI 界面
+      - name: Build UI (C#)
+        run: |
+          dotnet publish NIOH3AffixEditor/Nioh3AffixEditor.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=false
 
-      - name: Upload Artifact
+      # 3. 整理文件：把 DLL 复制到 EXE 旁边
+      - name: Prepare Package
+        run: |
+          mkdir out
+          copy NIOH3AffixEditor\bin\Release\net9.0-windows\win-x64\publish\* out\
+          copy x64\Release\Nioh3AffixCore.dll out\
+
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: NIOH3Editor-Full-Package
-          # 关键：打包整个 Release 目录，确保包含所有必要的 DLL
-          path: "**/bin/Release/"
+          name: NIOH3Editor-Ready-To-Run
+          path: out/
